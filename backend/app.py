@@ -4,6 +4,7 @@ from collections import Counter
 from datetime import datetime
 from pathlib import Path
 
+
 from flask import (
     Flask, request, jsonify, render_template, redirect, url_for, session
 )
@@ -395,6 +396,7 @@ with app.app_context():
     if updated:
         db.session.commit()
 
+app = Flask(__name__)
 
 if __name__ == "__main__":
     app.run(debug=True)
