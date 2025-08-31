@@ -1,0 +1,156 @@
+/* RESET & BASIC */
+* { box-sizing: border-box; margin:0; padding:0; }
+body { font-family: Arial, sans-serif; background: #0f0e17; color: #e6e6f0; line-height: 1.6; }
+
+/* NAVBAR */
+header { position: sticky; top:0; background: rgba(15,14,23,.85); border-bottom: 1px solid #232335; padding:1rem 0; z-index:50; }
+.nav { display: flex; justify-content: space-between; align-items: center; max-width:1100px; margin:auto; padding:0 1rem; }
+.brand { display: flex; align-items:center; gap:.5rem; text-decoration:none; color:#e6e6f0; font-weight:700; }
+.brand-logo { width:36px; height:36px; background: radial-gradient(circle at 25% 25%, #9f6cff, #7c3aed); border-radius:10px; }
+nav ul { display:flex; gap:1rem; list-style:none; }
+nav a { text-decoration:none; padding:.4rem .8rem; border-radius:999px; transition:.2s; }
+nav a:hover { background: rgba(124,58,237,.2); }
+
+/* HERO */
+.hero { display:grid; grid-template-columns:1.2fr .8fr; gap:2rem; align-items:center; padding:6rem 1rem 3rem; max-width:1100px; margin:auto; }
+.hero h1 { font-size:3rem; color:#9f6cff; margin-bottom:1rem; }
+.lead { color:#a1a1b3; font-size:1.2rem; margin-bottom:1.5rem; }
+.cta-row { display:flex; gap:1rem; flex-wrap:wrap; }
+.btn { text-decoration:none; padding:.8rem 1.2rem; border-radius:999px; font-weight:600; background: linear-gradient(180deg, rgba(124,58,237,.25), rgba(124,58,237,.1)); color:#f5f0e6; border:1px solid rgba(124,58,237,.4); }
+.btn.secondary { background:transparent; color:#e6e6f0; border-color: rgba(230,230,240,.2); }
+.btn:hover { filter: brightness(1.1); }
+
+/* HERO CARD */
+.hero-card { background: linear-gradient(180deg, rgba(124,58,237,.15), rgba(22,22,31,.6)); border-radius:16px; padding:1rem; display:grid; place-items:center; }
+.hero-card-inner { aspect-ratio:4/3; border-radius:10px; background: radial-gradient(120px 80px at 25% 30%, rgba(124,58,237,.45), transparent 70%), radial-gradient(120px 80px at 65% 70%, rgba(159,108,255,.25), transparent 70%); border:1px dashed rgba(230,230,240,.12); display:grid; place-items:center; color:#a1a1b3; }
+
+/* FEATURES */
+.features { display:grid; grid-template-columns:repeat(auto-fit, minmax(250px,1fr)); gap:2rem; max-width:1100px; margin:4rem auto; }
+.feature-card { background: #16161f; border:1px solid #232335; border-radius:16px; padding:2rem; box-shadow:0 10px 30px rgba(0,0,0,.35); transition:.2s; }
+.feature-card h2 { color:#9f6cff; margin-bottom:.8rem; }
+.feature-card p { color:#a1a1b3; }
+.feature-card:hover { transform:translateY(-5px); box-shadow:0 15px 40px rgba(124,58,237,.4); }
+
+/* FOOTER */
+footer { border-top:1px solid #232335; padding:2rem 1rem; text-align:center; color:#a1a1b3; }
+
+/* Form container */
+.card {
+    background-color: #1e1e1e;
+    padding: 2rem;
+    border-radius: 12px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+    max-width: 400px;
+    margin: 2rem auto;
+}
+
+/* Input group with floating label */
+.input-group {
+    position: relative;
+    margin-bottom: 1.5rem;
+}
+
+.input-group input,
+.input-group textarea {
+    width: 100%;
+    padding: 1rem 0.75rem;
+    border: none;
+    border-radius: 8px;
+    background-color: rgba(255,255,255,0.1); /* slightly whitish for visibility */
+    color: #fff;
+    font-size: 1rem;
+    outline: none;
+    transition: background-color 0.3s, box-shadow 0.3s;
+}
+
+.input-group input:focus,
+.input-group textarea:focus {
+    background-color: rgba(255,255,255,0.2);
+    box-shadow: 0 0 0 2px #6c63ff;
+}
+
+/* Floating labels */
+.input-group label {
+    position: absolute;
+    top: 50%;
+    left: 0.75rem;
+    transform: translateY(-50%);
+    color: #aaa;
+    pointer-events: none;
+    transition: all 0.2s ease;
+    font-size: 1rem;
+    background-color: transparent;
+    padding: 0 0.25rem;
+}
+
+/* Move label on focus or if input has value */
+.input-group input:focus + label,
+.input-group input:not(:placeholder-shown) + label,
+.input-group textarea:focus + label,
+.input-group textarea:not(:placeholder-shown) + label {
+    top: -0.6rem;
+    left: 0.5rem;
+    font-size: 0.8rem;
+    color: #6c63ff;
+    background-color: #1e1e1e;
+}
+
+/* Button styling */
+.btn {
+    background-color: #6c63ff;
+    color: #fff;
+    border: none;
+    padding: 0.75rem 1rem;
+    border-radius: 8px;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: background-color 0.3s, transform 0.2s;
+}
+
+.btn:hover {
+    background-color: #5548c8;
+    transform: translateY(-2px);
+}
+
+/* Placeholder hidden but needed for floating label */
+input::placeholder,
+textarea::placeholder {
+    color: transparent;
+}
+
+/* Adjust textarea */
+textarea {
+    resize: vertical;
+    min-height: 100px;
+}
+
+/* Error messages */
+.error-msg {
+    color: #ff4d4d;
+    font-size: 0.9rem;
+    margin-top: -1rem;
+    margin-bottom: 1rem;
+    text-align: center;
+}
+
+/* Links */
+a {
+    color: #6c63ff;
+    text-decoration: none;
+}
+
+a:hover {
+    text-decoration: underline;
+}
+
+
+textarea {
+  width: 100%;
+  padding: 0.8rem;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+  background-color: #f9f9f9; /* whitish for readability */
+  color: #000;
+  resize: vertical;
+  font-size: 1rem;
+}

@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Signup Mood Journal</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <script defer src="{{ url_for('static', filename='main.js') }}"></script>
+</head>
+<body>
+  <header>
+    <div class="container nav">
+      <a class="brand" href="{{ url_for('home') }}">
+        <span class="brand-logo"></span>
+        <span class="brand-name">Mood Journal</span>
+      </a>
+      <nav>
+        <ul>
+          <li><a href="{{ url_for('login') }}">Login</a></li>
+          <li><a href="{{ url_for('signup_page') }}">Signup</a></li>
+        </ul>
+      </nav>
+    </div>
+  </header>
+
+  <main class="container" style="display:flex; justify-content:center; align-items:center; min-height:80vh;">
+    <div class="card" style="max-width:400px; width:100%; padding:2rem; background: var(--surface); border-radius: var(--radius); box-shadow: var(--shadow);">
+      <h2 style="margin-bottom:1rem; color: var(--cream); text-align:center;">Signup</h2>
+      <form id="signupForm">
+        <div class="input-group">
+         <input type="text" name="username" id="username" required placeholder=" ">
+          <label for="username">Username</label>          
+        </div>
+        <div class="input-group" style="margin-top:1rem;">
+          <input type="email" name="email" id="email" required placeholder=" ">
+          <label for="email">Email</label>
+        </div>
+        <div class="input-group" style="margin-top:1rem;">
+          <input type="password" name="password" id="password" required placeholder=" ">
+          <label for="password">Password</label>
+        </div>
+        <button type="submit" class="btn" style="width:100%; margin-top:1.5rem;">Create Account</button>
+      </form>
+
+      <p style="text-align:center; margin-top:1rem; color: var(--muted);">
+        Already have an account? <a href="{{ url_for('login') }}" style="color: var(--accent);">Login</a>
+      </p>
+    </div>
+  </main>
+</body>
+</html>

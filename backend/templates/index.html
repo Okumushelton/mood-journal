@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Mood Journal</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <header>
+    <div class="container nav">
+      <a class="brand" href="#" aria-label="Homepage">
+        <span class="brand-logo"></span>
+        <span class="brand-name">Mood Journal</span>
+      </a>
+
+      <!-- CSS-only burger menu -->
+      <!-- <input type="checkbox" id="nav-toggle" aria-label="Toggle navigation" /> -->
+      <label class="burger menu" for="nav-toggle">
+        <span class="line1"></span>
+        <span class="line2"></span>
+        <span class="line3"></span>
+      </label>
+
+      <nav>
+        <ul id="site-nav">
+          <li><a href="/login">Login</a></li>
+          <li><a href="/signup">Sign Up</a></li>
+        </ul>
+      </nav>
+    </div>
+  </header>
+
+  <main id="main" class="container">
+    <!-- HERO -->
+    <section class="hero">
+      <div>
+        <h1>Track, Reflect, and Heal</h1>
+        <p class="lead">Your private space for daily journaling, mood tracking, and emotional clarity.</p>
+        <p class="lead">Therapy-inspired insights • Mood awareness • 100% Private & Secure</p> <br />
+        <div class="cta-row">
+          <a class="btn" href="/login">Login</a>
+          <a class="btn" href="/signup">Sign Up</a>
+        </div>
+      </div>
+      <aside class="hero-card" aria-label="Mood visualization">
+        <video class="hero-video" autoplay muted loop playsinline>
+          <source src="{{ url_for('static', filename='mood.mp4') }}" type="video/mp4">
+          Your browser does not support the video tag.
+        </video>
+      </aside>
+    </section>
+
+    <!-- FEATURES -->
+    <section class="features">
+      <div class="feature-card">
+        <h2>Track Your Mood</h2>
+        <p>Write daily journal entries and visualize your emotional trends over time.</p>
+      </div>
+      <div class="feature-card">
+        <h2>Analyze Your Emotions</h2>
+        <p>AI-powered sentiment analysis helps you understand your feelings better.</p>
+      </div>
+      <div class="feature-card">
+        <h2>Secure & Private</h2>
+        <p>Your data is encrypted and only accessible by you. Your privacy is our top priority.</p>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="container">
+      <small>© <span id="year"></span> Mood Journal.</small>
+    </div>
+  </footer>
+
+  <script>
+    document.getElementById('year').textContent = new Date().getFullYear();
+  </script>
+</body>
+</html>

@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login – Mood Journal</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <script defer src="{{ url_for('static', filename='main.js') }}"></script>
+</head>
+<body>
+  <header>
+    <div class="container nav">
+      <a class="brand" href="{{ url_for('home') }}">
+        <span class="brand-logo"></span>
+        <span class="brand-name">Mood Journal</span>
+      </a>
+      <nav>
+        <ul>
+          <li><a href="{{ url_for('login') }}">Login</a></li>
+          <li><a href="{{ url_for('signup_page') }}">Signup</a></li>
+        </ul>
+      </nav>
+    </div>
+  </header>
+
+  <main class="container" style="display:flex; justify-content:center; align-items:center; min-height:80vh;">
+    <div class="card" style="max-width:400px; width:100%; padding:2rem; background: var(--surface); border-radius: var(--radius); box-shadow: var(--shadow);">
+      <h2 style="margin-bottom:1rem; color: var(--cream); text-align:center;">Login</h2>
+      {% if error %}
+        <p style="color: var(--warn); text-align:center;">{{ error }}</p>
+      {% endif %}
+      <form method="POST" action="{{ url_for('login') }}">
+        <div class="input-group">
+          <input type="text" name="username" id="username" required placeholder=" ">
+          <label for="username">Username</label>
+        </div>
+        <div class="input-group" style="margin-top:1rem;">
+          <input type="password" name="password" id="password" required placeholder=" ">
+          <label for="password">Password</label>
+        </div>
+        <button type="submit" class="btn" style="width:100%; margin-top:1.5rem;">Login</button>
+      </form>
+      
+      <p style="text-align:center; margin-top:1rem; color: var(--muted);">
+        Don't have an account? <a href="{{ url_for('signup_page') }}" style="color: var(--accent);">Signup</a>
+      </p>
+    </div>
+  </main>
+</body>
+</html>

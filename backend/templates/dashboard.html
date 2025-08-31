@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Dashboard – Mood Journal</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+    <style>
+      body { background: #1e1e2f; color: #eee; font-family: sans-serif; margin: 0; }
+      header { background: #2b2b3d; padding: 1rem 2rem; display:flex; justify-content:space-between; align-items:center; }
+      header a { color:#fff; text-decoration:none; margin-right:1rem; }
+      nav ul { display:flex; list-style:none; margin:0; padding:0; }
+      nav ul li { margin-left:1rem; display:flex; align-items:center; }
+      .container { padding:2rem; }
+      .grid { display:grid; grid-template-columns: repeat(4,1fr); gap:1rem; }
+      .card { background:#2b2b3d; padding:1.5rem; border-radius:10px; box-shadow:0 0 10px rgba(0,0,0,0.5); }
+      .input-group { position:relative; margin-top:1rem; }
+      .input-group label { position:absolute; top:-10px; left:10px; font-size:0.85rem; color:#aaa; background:#2b2b3d; padding:0 5px; }
+      .input-group textarea { width:100%; padding:0.8rem; border-radius:8px; border:none; resize:vertical; background:#f5f5f5; color:#000; font-size:0.95rem; }
+      .btn { padding:0.8rem 1.2rem; background:#4a90e2; color:#fff; border:none; border-radius:8px; cursor:pointer; }
+      .entries { max-height:400px; overflow-y:auto; }
+      .entries .entry { margin-bottom:1rem; padding:1rem; background:#1f1f2f; border-radius:8px; }
+      canvas { background:#1f1f2f; border-radius:10px; padding:10px; }
+      .chart-card { grid-column: span 2; }
+      /* Popup Styles */
+      #popupForm { position: fixed; top:50%; left:50%; transform:translate(-50%,-50%); background:#2b2b3d; padding:20px; border-radius:10px; box-shadow:0 0 15px rgba(0,0,0,0.6); display:none; z-index:999; }
+      @media (max-width:1200px){ .grid { grid-template-columns: repeat(auto-fit, minmax(220px,1fr)); } .chart-card { grid-column: span 1; } }
+    </style>
+  </head>
+  <body>
+    <header>
+      <a class="brand" href="{{ url_for('home') }}">Mood Journal</a>
+      <nav>
+        <ul>
+          <li>
+            {% if current_user.profile_pic %}
+              <img src="{{ url_for('static', filename='uploads/' ~ current_user.profile_pic) }}?{{ current_user.created_at.timestamp() }}" style="width:35px;height:35px;border-radius:50%;object-fit:cover;">
+            {% else %}
+              <img src="{{ url_for('static', filename='uploads/default.png') }}" style="width:35px;height:35px;border-radius:50%;object-fit:cover;">
+            {% endif %}
+            <span style="color:#fff; font-weight:bold; margin-left:8px;">{{ current_user.username }}</span>
+          </li>
+          <li><a href="{{ url_for('dashboard') }}">Dashboard</a></li>
+          <li><a href="{{ url_for('profile') }}">Profile</a></li>
+          <li><a href="{{ url_for('logout') }}">Logout</a></li>
+        </ul>
+      </nav>
+    </header>
+
+    <main class="container">
+      <div class="grid">
+        <!-- Add New Entry -->
+        <div class="card">
+          <h2>Add New Journal Entry</h2>
+          <form id="entry-form" method="POST">
+            <div class="input-group">
+              <textarea name="content" rows="5" required placeholder=" "></textarea>
+              <label>Write your thoughts...</label>
+            </div>
+            <button type="submit" class="btn" style="margin-top:1rem;">Save Entry</button>
+          </form>
+        </div>
+
+        <!-- Mood Summary -->
+        <div class="card">
+          <h2>Mood Summary & Insights</h2>
+          <p>Total Entries: {{ entries|length }}</p>
+          <p>Most Frequent Emotion: {{ most_common_emotion }}</p>
+          <p>Current Streak: 3 days</p>
+        </div>
+
+        <!-- Booking card -->
+        <div class="card">
+          <h2>Premium Service</h2>
+          {% if current_user.is_subscribed %}
+            <p>You have an active subscription.</p>
+            <button class="btn" disabled>Booked</button>
+            <br/><br/>
+            <a href="tel:+254700000000" class="btn">Call Therapist</a>
+          {% else %}
+            <p>Subscribe to access a private therapist and exclusive features.</p>
+            <button id="bookBtn" class="btn">Book Therapist – KES 1500</button>
+          {% endif %}
+        </div>
+
+        <!-- Popup Form -->
+        <div id="popupForm">
+          <form id="bookingForm">
+            <label for="phone">Enter M-Pesa Number:</label><br/>
+            <input type="text" id="phone" name="phone" placeholder="2547XXXXXXXX" required style="padding:8px; width:100%; margin-top:8px; margin-bottom:12px;">
+            <div style="display:flex; gap:8px;">
+              <button type="submit" class="btn">Confirm Booking</button>
+              <button type="button" id="cancelBooking" class="btn" style="background:#777;">Cancel</button>
+            </div>
+          </form>
+        </div>
+
+        <!-- Quick Mood -->
+        <div class="card">
+          <h2>Quick Mood</h2>
+          <select id="quickMood">
+            <option value="happy">Happy</option>
+            <option value="sad">Sad</option>
+            <option value="angry">Angry</option>
+            <option value="neutral">Neutral</option>
+            <option value="anxious">Anxious</option>
+          </select>
+          <button id="quickMoodBtn" class="btn">Save Mood</button>
+        </div>
+
+        <!-- Journal Entries -->
+        <div class="card entries">
+          <h2>Your Entries</h2>
+          {% for entry in entries %}
+            <div class="entry">
+              <p>{{ entry.content }}</p>
+              {% if entry.sentiment %}
+                <p>Sentiment:
+                  {% for s in entry.sentiment %}
+                    {% if 'label' in s and 'score' in s %}
+                      <span style="display:inline-block;background:#4a90e2;color:#fff;padding:0.2rem 0.5rem;margin:0.1rem;border-radius:4px;font-size:0.85rem;">
+                        {{ s['label'] }} ({{ s['score']|round(2) }})
+                      </span>
+                    {% endif %}
+                  {% endfor %}
+                </p>
+              {% else %}
+                <p style="color:#aaa">No sentiment data available.</p>
+              {% endif %}
+              <p style="font-size:0.75rem;color:#aaa">{{ entry.timestamp.strftime('%Y-%m-%d %H:%M') }}</p>
+            </div>
+          {% endfor %}
+        </div>
+
+        <!-- Mood Trend Chart -->
+        <div class="card chart-card">
+          <h2>Mood Trends Over Time</h2>
+          <canvas id="moodChart" width="600" height="300"></canvas>
+        </div>
+      </div>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+      // Show booking popup
+      const bookBtn = document.getElementById('bookBtn');
+      const popup = document.getElementById('popupForm');
+      const cancelBooking = document.getElementById('cancelBooking');
+
+      if (bookBtn) bookBtn.onclick = () => popup.style.display = 'block';
+      if (cancelBooking) cancelBooking.onclick = () => popup.style.display = 'none';
+
+      // Booking form submit -> /book (STK push)
+      document.getElementById('bookingForm').onsubmit = async function(e) {
+        e.preventDefault();
+        const phone = document.getElementById('phone').value.trim();
+        if (!phone) { alert('Please enter phone number'); return; }
+
+        try {
+          const res = await fetch('/book', {
+            method: 'POST',
+            headers: {'Content-Type':'application/json'},
+            body: JSON.stringify({ phone })
+          });
+          const data = await res.json();
+          if (!res.ok) {
+            alert(data.message || JSON.stringify(data));
+          } else {
+            alert('STK push sent — check your phone. Invoice: ' + (data.invoice || 'n/a'));
+            popup.style.display = 'none';
+          }
+        } catch (err) {
+          console.error(err);
+          alert('Booking failed. Try again.');
+        }
+      };
+
+      // Quick mood
+      document.getElementById('quickMoodBtn').addEventListener('click', async () => {
+        const mood = document.getElementById('quickMood').value;
+        try {
+          const response = await fetch('/api/quick-mood', {
+            method: 'POST',
+            headers: {'Content-Type':'application/json'},
+            body: JSON.stringify({ mood })
+          });
+          const data = await response.json();
+          if (!response.ok) { alert(data.error || 'Error recording mood'); return; }
+          alert(data.message || 'Saved!');
+          window.location.reload();
+        } catch (err) {
+          console.error(err);
+          alert('Error recording mood. Try again.');
+        }
+      });
+
+      // Chart
+      const ctx = document.getElementById('moodChart').getContext('2d');
+      const labels = [
+        {% for entry in entries|reverse %}
+          '{{ entry.timestamp.strftime("%Y-%m-%d") }}'{% if not loop.last %},{% endif %}
+        {% endfor %}
+      ];
+      const scores = [
+        {% for entry in entries|reverse %}
+          {{ entry.daily_mood_score|float }}{% if not loop.last %},{% endif %}
+        {% endfor %}
+      ];
+      const labels_tooltip = [
+        {% for entry in entries|reverse %}
+          {% if entry.sentiment and entry.sentiment[0] is defined and entry.sentiment[0]['label'] is defined %}
+            '{{ entry.sentiment[0]["label"] }}'{% if not loop.last %},{% endif %}
+          {% else %}
+            'unknown'{% if not loop.last %},{% endif %}
+          {% endif %}
+        {% endfor %}
+      ];
+      new Chart(ctx, {
+        type: 'line',
+        data: { labels: labels, datasets: [{ label: 'Daily Mood Score', data: scores, borderColor:'#4a90e2', backgroundColor:'rgba(74,144,226,0.2)', tension:0.3, fill:true }] },
+        options: {
+          responsive:true,
+          plugins: { tooltip: { callbacks: { label: function(context) {
+            const idx = context.dataIndex;
+            return labels_tooltip[idx] + ' (' + scores[idx].toFixed(2) + ')';
+          } } } },
+          scales: { y: { beginAtZero: false, min:-1, max:1 } }
+        }
+      });
+    </script>
+  </body>
+</html>
