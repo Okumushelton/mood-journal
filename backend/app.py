@@ -396,7 +396,5 @@ with app.app_context():
     if updated:
         db.session.commit()
 
-app = Flask(__name__)
-
 if __name__ == "__main__":
     app.run(debug=True)
