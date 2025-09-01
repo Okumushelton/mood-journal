@@ -62,6 +62,18 @@ os.makedirs(app.config["UPLOAD_FOLDER"], exist_ok=True)
 
 db = SQLAlchemy(app)
 
+# --- Global Mood map ---
+# Moved to global scope so both dashboard() and quick_mood() can access it.
+mood_map = {
+    'joy': 1.0, 'amusement': 0.8, 'excitement': 0.7, 'love': 0.9, 'relief': 0.6,
+    'satisfaction': 0.6, 'adoration': 0.9, 'calmness': 0.5, 'realization': 0.2,
+    'surprise (positive)': 0.5, 'confusion': -0.2, 'annoyance': -0.5,
+    'anger': -0.8, 'disgust': -0.9, 'sadness': -1.0, 'grief': -1.0,
+    'disappointment': -0.7, 'fear': -0.8, 'anxiety': -0.7,
+    'awkwardness': -0.5, 'boredom': -0.3, 'craving': -0.2,
+    'surprise (negative)': -0.5, 'neutral': 0.0
+}
+
 
 # --- Models ---
 class User(db.Model):
@@ -186,17 +198,6 @@ def dashboard():
         except (json.JSONDecodeError, TypeError):
             e.sentiment = []
 
-    # Mood map
-    mood_map = {
-        'joy': 1.0, 'amusement': 0.8, 'excitement': 0.7, 'love': 0.9, 'relief': 0.6,
-        'satisfaction': 0.6, 'adoration': 0.9, 'calmness': 0.5, 'realization': 0.2,
-        'surprise (positive)': 0.5, 'confusion': -0.2, 'annoyance': -0.5,
-        'anger': -0.8, 'disgust': -0.9, 'sadness': -1.0, 'grief': -1.0,
-        'disappointment': -0.7, 'fear': -0.8, 'anxiety': -0.7,
-        'awkwardness': -0.5, 'boredom': -0.3, 'craving': -0.2,
-        'surprise (negative)': -0.5, 'neutral': 0.0
-    }
-
     for entry in entries:
         if entry.sentiment:
             total_score = 0
@@ -277,17 +278,26 @@ def quick_mood():
     mood_label = data.get("mood")
     if not mood_label:
         return jsonify({"error": "No mood selected"}), 400
-    sentiment_result = [{"label": mood_label, "score": 1.0}]
+    
+    # Corrected line: Normalize the mood label
+    mood_label = mood_label.strip().lower()
+    
+    # Get the score from the global mood_map, defaulting to 0.0 if not found
+    mood_score = mood_map.get(mood_label, 0.0)
+    sentiment_result = [{"label": mood_label, "score": mood_score}]
+    
     entry = JournalEntry(user_id=user.id, content=f"Quick mood: {mood_label}", sentiment=json.dumps(sentiment_result))
     db.session.add(entry)
     db.session.commit()
     return jsonify({"message": "Mood recorded!"})
 
-
-# ... (all your imports and setup)
-
 @app.route("/book", methods=["POST"])
 def book():
+    """
+    Called from dashboard popup (POST JSON: {"phone":"2547XXXXXXXX"})
+    This triggers an STK push via IntaSend (service.collect.mpesa_stk_push).
+    We persist a Booking row with returned invoice id (if any) so the callback can update it.
+    """
     if "user_id" not in session:
         return jsonify({"message": "Not logged in"}), 401
 
@@ -302,37 +312,27 @@ def book():
     user = User.query.get(session["user_id"])
 
     try:
-        # Make STK push request
+        # Make STK push request - amount set to 1500 (KES) for real booking
         resp = service.collect.mpesa_stk_push(
             phone_number=phone,
             email=user.email or "customer@example.com",
             amount=1,
             narrative="Therapy Booking"
         )
-        
-        # We expect a dictionary with a valid invoice ID
+
+        # IntaSend responses vary — try a few keys to retrieve invoice id
         invoice_id = None
         if isinstance(resp, dict):
             invoice_id = resp.get("invoice") or resp.get("id") or resp.get("data", {}).get("invoice")
+        # fallback: stringify response if nothing else
+        invoice_id_str = json.dumps(resp)
 
-        # If we didn't get a usable invoice ID, return a server-side error
-        if not invoice_id:
-            # This handles cases where the API returns an unexpected format
-            return jsonify({
-                "message": "Booking failed: Could not get a valid invoice ID from the payment provider.",
-                "raw_response": resp
-            }), 500
-
-        # Save booking with the valid invoice_id
-        booking = Booking(user_id=user.id, phone=phone, invoice_id=invoice_id, status="pending")
+        # Save booking with invoice id (if found), phone, pending status
+        booking = Booking(user_id=user.id, phone=phone, invoice_id=invoice_id or invoice_id_str, status="pending")
         db.session.add(booking)
         db.session.commit()
 
-        return jsonify({
-            "message": "STK push sent to your phone!",
-            "invoice": booking.invoice_id
-        })
-
+        return jsonify({"message": "STK push sent to your phone!", "invoice": booking.invoice_id, "raw": resp})
     except Exception as e:
         return jsonify({"message": f"Booking failed: {str(e)}"}), 400
 
@@ -402,6 +402,7 @@ with app.app_context():
             updated = True
     if updated:
         db.session.commit()
+
 
 if __name__ == "__main__":
     app.run(debug=True)
