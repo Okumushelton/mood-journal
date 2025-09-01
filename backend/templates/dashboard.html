@@ -195,6 +195,55 @@
       #quickMood option:hover {
         background-color: #e2e6ea;
       }
+
+      .btn[disabled] {
+    background: linear-gradient(135deg, #ff7e29, #ff5e00);
+    color: white;
+    border: none;
+    box-shadow: 0 4px 10px rgba(255, 111, 0, 0.3);
+    cursor: not-allowed;
+    opacity: 1;
+    position: relative;
+    overflow: hidden;
+}
+
+.btn[disabled]:before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: rgba(255, 255, 255, 0.1);
+    transform: rotate(45deg);
+    transition: all 0.5s ease;
+}
+
+.btn[disabled]:after {
+    content: '';
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background-color: #fff;
+    margin-right: 8px;
+    animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+    0% {
+        transform: scale(0.95);
+        box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.7);
+    }
+    70% {
+        transform: scale(1);
+        box-shadow: 0 0 0 6px rgba(255, 255, 255, 0);
+    }
+    100% {
+        transform: scale(0.95);
+        box-shadow: 0 0 0 0 rgba(255, 255, 255, 0);
+    }
+}
     </style>
   </head>
   <body>
@@ -269,6 +318,9 @@
           <button class="btn" disabled>Booked</button>
           <br /><br />
           <a href="tel:+254700000000" class="btn">Call Therapist</a>
+          {% elif has_pending_booking %}
+          <p>Your booking is pending confirmation. Please wait for admin aproval.</p><br>
+          <button class="btn" disabled>Pending Confirmation</button>
           {% else %}
           <p>
             Unlock unlimited 30-day online sessions with a dedicated therapist.
@@ -406,15 +458,15 @@
           });
           const data = await res.json();
           if (!res.ok) {
-            // Updated to be more user-friendly
             alert(data.message || 'Booking failed. Please try again.');
           } else {
             alert(data.message || 'STK push sent — check your phone.');
             popup.style.display = 'none';
+            // Refresh the page to show "Pending Confirmation"
+            window.location.reload();
           }
         } catch (err) {
           console.error(err);
-          // Generic message on network/unexpected failure
           alert('Booking failed. Please try again.');
         }
       };

@@ -42,13 +42,13 @@ if not _intasend_from_config:
     try:
         from intasend import APIService
         if not INTASEND_SECRET_KEY:
-            print("INTASEND_SECRET_KEY missing in env; IntaSend features will be disabled.")
+            print("⚠️ INTASEND_SECRET_KEY missing in env; IntaSend features will be disabled.")
             service = None
         else:
             service = APIService(token=INTASEND_SECRET_KEY, test=INTASEND_TEST_MODE)
-            print("IntaSend initialized from .env")
+            print("✅ IntaSend initialized from .env")
     except Exception as e:
-        print("Could not initialize IntaSend:", e)
+        print("⚠️ Could not initialize IntaSend:", e)
         service = None
 
 # --- Flask setup ---
@@ -61,18 +61,6 @@ app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
 os.makedirs(app.config["UPLOAD_FOLDER"], exist_ok=True)
 
 db = SQLAlchemy(app)
-
-# --- Global Mood map ---
-# Moved to global scope so both dashboard() and quick_mood() can access it.
-mood_map = {
-    'joy': 1.0, 'amusement': 0.8, 'excitement': 0.7, 'love': 0.9, 'relief': 0.6,
-    'satisfaction': 0.6, 'adoration': 0.9, 'calmness': 0.5, 'realization': 0.2,
-    'surprise (positive)': 0.5, 'confusion': -0.2, 'annoyance': -0.5,
-    'anger': -0.8, 'disgust': -0.9, 'sadness': -1.0, 'grief': -1.0,
-    'disappointment': -0.7, 'fear': -0.8, 'anxiety': -0.7,
-    'awkwardness': -0.5, 'boredom': -0.3, 'craving': -0.2,
-    'surprise (negative)': -0.5, 'neutral': 0.0
-}
 
 
 # --- Models ---
@@ -174,6 +162,12 @@ def dashboard():
 
     user = User.query.get(session["user_id"])
 
+    # Check if user has any pending bookings
+    has_pending_booking = Booking.query.filter_by(
+        user_id=user.id, 
+        status="pending"
+    ).first() is not None
+
     if request.method == "POST":
         content = request.form.get("content")
         if content:
@@ -197,6 +191,17 @@ def dashboard():
             e.sentiment = [s for s in loaded if isinstance(s, dict) and 'label' in s and 'score' in s]
         except (json.JSONDecodeError, TypeError):
             e.sentiment = []
+
+    # Mood map
+    mood_map = {
+        'joy': 1.0, 'amusement': 0.8, 'excitement': 0.7, 'love': 0.9, 'relief': 0.6,
+        'satisfaction': 0.6, 'adoration': 0.9, 'calmness': 0.5, 'realization': 0.2,
+        'surprise (positive)': 0.5, 'confusion': -0.2, 'annoyance': -0.5,
+        'anger': -0.8, 'disgust': -0.9, 'sadness': -1.0, 'grief': -1.0,
+        'disappointment': -0.7, 'fear': -0.8, 'anxiety': -0.7,
+        'awkwardness': -0.5, 'boredom': -0.3, 'craving': -0.2,
+        'surprise (negative)': -0.5, 'neutral': 0.0
+    }
 
     for entry in entries:
         if entry.sentiment:
@@ -230,7 +235,8 @@ def dashboard():
         entries=entries,
         most_common_emotion=most_common_emotion,
         current_user=user,
-        INTASEND_PUBLISHABLE_KEY=INTASEND_PUBLISHABLE_KEY or ""
+        INTASEND_PUBLISHABLE_KEY=INTASEND_PUBLISHABLE_KEY or "",
+        has_pending_booking=has_pending_booking  # Add this line
     )
 
 
@@ -242,19 +248,25 @@ def profile():
     import time
     ts = int(time.time())
 
-    # Get the path to the default image
-    default_pic_url = url_for('static', filename='uploads/default.png')
-
     if request.method == "POST":
         username = request.form.get("username")
         password = request.form.get("password")
-        # ... (rest of your POST logic remains the same) ...
+        if username:
+            user.username = username
+        if password:
+            user.password_hash = generate_password_hash(password)
+        if 'profile_pic' in request.files:
+            pic = request.files['profile_pic']
+            if pic.filename != '':
+                filename = secure_filename(pic.filename)
+                filename = f"user_{user.id}_{filename}"
+                upload_path = os.path.join(app.config["UPLOAD_FOLDER"], filename)
+                os.makedirs(app.config["UPLOAD_FOLDER"], exist_ok=True)
+                pic.save(upload_path)
+                user.profile_pic = filename
         db.session.commit()
-        # Pass the default image path to the template
-        return render_template("profile.html", user=user, message="Profile updated successfully!", ts=ts, profile_pic_url=default_pic_url)
-
-    # Pass the default image path to the template for GET requests
-    return render_template("profile.html", user=user, ts=ts, profile_pic_url=default_pic_url)
+        return render_template("profile.html", user=user, message="Profile updated successfully!", ts=ts)
+    return render_template("profile.html", user=user)
 
 
 @app.route("/logout")
@@ -272,64 +284,92 @@ def quick_mood():
     mood_label = data.get("mood")
     if not mood_label:
         return jsonify({"error": "No mood selected"}), 400
-    
-    # Corrected line: Normalize the mood label
-    mood_label = mood_label.strip().lower()
-    
-    # Get the score from the global mood_map, defaulting to 0.0 if not found
-    mood_score = mood_map.get(mood_label, 0.0)
-    sentiment_result = [{"label": mood_label, "score": mood_score}]
-    
+    sentiment_result = [{"label": mood_label, "score": 1.0}]
     entry = JournalEntry(user_id=user.id, content=f"Quick mood: {mood_label}", sentiment=json.dumps(sentiment_result))
     db.session.add(entry)
     db.session.commit()
     return jsonify({"message": "Mood recorded!"})
 
+
+# ... (all your imports and setup)
+
 @app.route("/book", methods=["POST"])
 def book():
-    # ... (your existing logic to get data and call STK push)
     if "user_id" not in session:
-        return jsonify({"success": False, "message": "User not logged in"}), 401
+        return jsonify({"message": "Not logged in"}), 401
 
+    data = request.get_json() or {}
+    phone = data.get("phone")
+    if not phone:
+        return jsonify({"message": "Missing phone number"}), 400
+
+    user = User.query.get(session["user_id"])
+    
+    # Generate a unique invoice ID for this booking
+    invoice_id = f"INV_{user.id}_{int(datetime.now().timestamp())}"
+    
+    # Create the booking immediately with pending status
+    booking = Booking(user_id=user.id, phone=phone, invoice_id=invoice_id, status="pending")
+    db.session.add(booking)
+    db.session.commit()
+
+    # Try to initiate STK push if service is available
+    if service:
+        try:
+            # Make STK push request
+            resp = service.collect.mpesa_stk_push(
+                phone_number=phone,
+                email=user.email or "customer@example.com",
+                amount=1,
+                narrative="Therapy Booking"
+            )
+            
+            print("IntaSend response:", resp)
+            
+            # If we get a response with a different invoice ID, update our booking
+            if isinstance(resp, dict):
+                intasend_invoice = (resp.get("invoice") or 
+                                   resp.get("id") or 
+                                   resp.get("invoice_id") or
+                                   resp.get("data", {}).get("invoice") or
+                                   resp.get("data", {}).get("id"))
+                
+                if intasend_invoice and intasend_invoice != invoice_id:
+                    booking.invoice_id = intasend_invoice
+                    db.session.commit()
+            
+        except Exception as e:
+            print("STK push failed but booking created:", str(e))
+            # Don't return error - we've already created the booking
+    
+    return jsonify({
+        "message": "Enter PIN on your Phone",
+        "invoice": invoice_id
+    })
+    
+@app.route("/debug-intasend", methods=["POST"])
+def debug_intasend():
+    """Temporary debug endpoint to see IntaSend response format"""
+    if not service:
+        return jsonify({"error": "Service not configured"}), 500
+    
+    data = request.get_json() or {}
+    phone = data.get("phone", "+254712345678")  # Test phone number
+    
     try:
-        data = request.json
-        phone_number = data.get("phone")
-
-        # Assume this function gets the STK push response
-        # It should be a dictionary
-        response_data = initiate_stk_push(phone_number) 
-
-        # We need to serialize the response dictionary into a JSON string
-        # This is the key fix for the database error
-        invoice_json = json.dumps(response_data)
-
-        # Assuming your Booking model has fields for user_id, phone, etc.
-        # This is where we insert the JSON string instead of the dictionary
-        new_booking = Booking(
-            user_id=session["user_id"],
-            phone=phone_number,
-            invoice_id=invoice_json, # <--- The key fix is here
-            status="PENDING"
+        resp = service.collect.mpesa_stk_push(
+            phone_number=phone,
+            email="test@example.com",
+            amount=1,
+            narrative="Test Debug"
         )
-        db.session.add(new_booking)
-        db.session.commit()
-        
-        # This is what will be sent to the front end
         return jsonify({
-            "success": True, 
-            "message": "STK push sent. Check your phone.", 
-            "invoice": response_data.get("invoice id", "n/a")
-        }), 200
-
+            "response_type": type(resp).__name__,
+            "response": resp,
+            "keys": list(resp.keys()) if isinstance(resp, dict) else "Not a dict"
+        })
     except Exception as e:
-        # Instead of showing the detailed error, we'll log it and
-        # return a generic, user-friendly message.
-        print(f"Booking Error: {e}") # Log the error for debugging
-        return jsonify({
-            "success": False, 
-            "message": "Booking failed. Please try again or contact support."
-        }), 500
-
+        return jsonify({"error": str(e), "type": type(e).__name__})
 
 @app.route("/intasend/callback", methods=["POST"])
 def intasend_callback():
@@ -396,7 +436,6 @@ with app.app_context():
             updated = True
     if updated:
         db.session.commit()
-
 
 if __name__ == "__main__":
     app.run(debug=True)
