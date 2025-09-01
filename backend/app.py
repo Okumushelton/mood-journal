@@ -42,13 +42,13 @@ if not _intasend_from_config:
     try:
         from intasend import APIService
         if not INTASEND_SECRET_KEY:
-            print("⚠️ INTASEND_SECRET_KEY missing in env; IntaSend features will be disabled.")
+            print("INTASEND_SECRET_KEY missing in env; IntaSend features will be disabled.")
             service = None
         else:
             service = APIService(token=INTASEND_SECRET_KEY, test=INTASEND_TEST_MODE)
-            print("✅ IntaSend initialized from .env")
+            print("IntaSend initialized from .env")
     except Exception as e:
-        print("⚠️ Could not initialize IntaSend:", e)
+        print("Could not initialize IntaSend:", e)
         service = None
 
 # --- Flask setup ---
