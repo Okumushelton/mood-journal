@@ -124,46 +124,77 @@
       }
 
       /* Responsive tweaks */
-@media (max-width: 768px) {
-  header {
-    flex-direction: column;
-    align-items: flex-start;
-  }
+      @media (max-width: 768px) {
+        header {
+          flex-direction: column;
+          align-items: flex-start;
+        }
 
-  nav ul {
-    flex-direction: column;
-    gap: 0.5rem;
-    margin-top: 1rem;
-  }
+        nav ul {
+          flex-direction: column;
+          gap: 0.5rem;
+          margin-top: 1rem;
+        }
 
-  .card {
-    padding: 1rem;
-  }
+        .card {
+          padding: 1rem;
+        }
 
-  h2 {
-    font-size: 1.2rem;
-  }
+        h2 {
+          font-size: 1.2rem;
+        }
 
-  .btn {
-    width: 100%; /* buttons full width on mobile */
-    text-align: center;
-  }
-}
+        .btn {
+          width: 100%; /* buttons full width on mobile */
+          text-align: center;
+        }
+      }
 
-@media (max-width: 480px) {
-  body {
-    font-size: 14px;
-  }
+      @media (max-width: 480px) {
+        body {
+          font-size: 14px;
+        }
 
-  header {
-    padding: 0.5rem 1rem;
-  }
+        header {
+          padding: 0.5rem 1rem;
+        }
 
-  nav ul li span {
-    font-size: 0.9rem;
-  }
-}
-
+        nav ul li span {
+          font-size: 0.9rem;
+        }
+      }
+      #quickMood {
+        width: 100%;
+        padding: 10px 15px;
+        font-size: 16px;
+        border: 1px solid #ccc;
+        border-radius: 8px;
+        background-color: #fff;
+        color: #333;
+        cursor: pointer;
+        appearance: none;
+        -webkit-appearance: none;
+        -moz-appearance: none;
+      }
+      #quickMood {
+        background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23000%22%20d%3D%22M287%20165.7l-133.5%20133.5c-3.1%203.1-8.2%203.1-11.3%200l-133.5-133.5c-3.1-3.1-3.1-8.2%200-11.3l11.3-11.3c3.1-3.1%208.2-3.1%2011.3%200l116.8%20116.8%20116.8-116.8c3.1-3.1%208.2-3.1%2011.3%200l11.3%2011.3c3.1%203.1%203.1%208.2%200%2011.3z%22%2F%3E%3C%2Fsvg%3E');
+        background-repeat: no-repeat;
+        background-position: right 15px center;
+        background-size: 12px;
+      }
+      #quickMood:focus {
+        outline: none;
+        border-color: #007bff;
+        box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.25);
+      }
+      #quickMood option {
+        padding: 10px;
+        background-color: #f8f9fa;
+        color: #333;
+      }
+      #quickMood option:hover {
+        background-color: #e2e6ea;
+      }
     </style>
   </head>
   <body>
@@ -206,7 +237,6 @@
 
     <main class="container">
       <div class="grid">
-        <!-- Add New Entry -->
         <div class="card">
           <h2>Add New Journal Entry</h2>
           <form id="entry-form" method="POST">
@@ -225,7 +255,6 @@
           </form>
         </div>
 
-        <!-- Mood Summary -->
         <div class="card">
           <h2>Mood Summary & Insights</h2>
           <p>Total Entries: {{ entries|length }}</p>
@@ -233,7 +262,6 @@
           <p>Current Streak: 3 days</p>
         </div>
 
-        <!-- Booking card -->
         <div class="card">
           <h2>Premium Service</h2>
           {% if current_user.is_subscribed %}
@@ -242,12 +270,21 @@
           <br /><br />
           <a href="tel:+254700000000" class="btn">Call Therapist</a>
           {% else %}
-          <p>Subscribe to access a private therapist and exclusive features.</p>
-          <button id="bookBtn" class="btn">Book Therapist – KES 1500</button>
+          <p>
+            Unlock unlimited 30-day online sessions with a dedicated therapist.
+            Get personalized support and exclusive Therapy Sessions designed to
+            help you on your journey to better mental wellness..
+          </p>
+          <br />
+          <div style="display: flex; justify-content: center">
+            <button id="bookBtn" class="btn">
+              Book Therapist <br />
+              KES 1500
+            </button>
+          </div>
           {% endif %}
         </div>
 
-        <!-- Popup Form -->
         <div id="popupForm">
           <form id="bookingForm">
             <label for="phone">Enter M-Pesa Number:</label><br />
@@ -278,7 +315,6 @@
           </form>
         </div>
 
-        <!-- Quick Mood -->
         <div class="card">
           <h2>Quick Mood</h2>
           <select id="quickMood">
@@ -289,9 +325,10 @@
             <option value="anxiety">Anxious</option>
           </select>
           <button id="quickMoodBtn" class="btn">Save Mood</button>
+          <br><br>
+          <p>Quickly select a mood to store in your journal entry.</p>
         </div>
 
-        <!-- Journal Entries -->
         <div class="card entries">
           <h2>My Entries</h2>
           {% for entry in entries %}
@@ -326,10 +363,21 @@
           {% endfor %}
         </div>
 
-        <!-- Mood Trend Chart -->
         <div class="card chart-card">
           <h2>Mood Trends Over Time</h2>
           <canvas id="moodChart" width="600" height="300"></canvas>
+        </div>
+        
+        <div class="card">
+          <h2>Healthy Habits</h2>
+          <br>
+          <ul>
+            <li><b>Stay Active:</b> A short walk or light exercise can boost your mood.</li>
+            <li><b>Eat Well:</b> Nourishing your body helps nourish your mind.</li>
+            <li><b>Get Rest:</b> Aim for 7-9 hours of sleep to feel refreshed.</li>
+            <li><b>Connect with Others:</b> Talk to friends or family to share your feelings.</li>
+            <li><b>Take a Break:</b>Find time to relax and do something you enjoy.</li>
+          </ul>
         </div>
       </div>
     </main>
@@ -424,13 +472,13 @@
     </script>
 
     <footer>
-    <div>
-      <small>© <span id="year"></span> Mood Journal.</small>
-    </div>
-  </footer>
+      <div>
+        <small>© <span id="year"></span> Mood Journal.</small>
+      </div>
+    </footer>
 
-  <script>
-    document.getElementById('year').textContent = new Date().getFullYear();
-  </script>
+    <script>
+      document.getElementById("year").textContent = new Date().getFullYear();
+    </script>
   </body>
 </html>
