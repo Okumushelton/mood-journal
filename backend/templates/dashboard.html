@@ -145,7 +145,7 @@
         }
 
         .btn {
-          width: 100%; /* buttons full width on mobile */
+          width: 100%;
           text-align: center;
         }
       }
@@ -406,14 +406,16 @@
           });
           const data = await res.json();
           if (!res.ok) {
-            alert(data.message || JSON.stringify(data));
+            // Updated to be more user-friendly
+            alert(data.message || 'Booking failed. Please try again.');
           } else {
-            alert('STK push sent — check your phone. Invoice: ' + (data.invoice || 'n/a'));
+            alert(data.message || 'STK push sent — check your phone.');
             popup.style.display = 'none';
           }
         } catch (err) {
           console.error(err);
-          alert('Booking failed. Try again.');
+          // Generic message on network/unexpected failure
+          alert('Booking failed. Please try again.');
         }
       };
 

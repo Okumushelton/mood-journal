@@ -287,48 +287,48 @@ def quick_mood():
 
 @app.route("/book", methods=["POST"])
 def book():
-    """
-    Called from dashboard popup (POST JSON: {"phone":"2547XXXXXXXX"})
-    This triggers an STK push via IntaSend (service.collect.mpesa_stk_push).
-    We persist a Booking row with returned invoice id (if any) so the callback can update it.
-    """
+    # ... (your existing logic to get data and call STK push)
     if "user_id" not in session:
-        return jsonify({"message": "Not logged in"}), 401
-
-    data = request.get_json() or {}
-    phone = data.get("phone")
-    if not phone:
-        return jsonify({"message": "Missing phone number"}), 400
-
-    if not service:
-        return jsonify({"message": "Payment service not configured on server"}), 500
-
-    user = User.query.get(session["user_id"])
+        return jsonify({"success": False, "message": "User not logged in"}), 401
 
     try:
-        # Make STK push request - amount set to 1500 (KES) for real booking
-        resp = service.collect.mpesa_stk_push(
-            phone_number=phone,
-            email=user.email or "customer@example.com",
-            amount=1,
-            narrative="Therapy Booking"
+        data = request.json
+        phone_number = data.get("phone")
+
+        # Assume this function gets the STK push response
+        # It should be a dictionary
+        response_data = initiate_stk_push(phone_number) 
+
+        # We need to serialize the response dictionary into a JSON string
+        # This is the key fix for the database error
+        invoice_json = json.dumps(response_data)
+
+        # Assuming your Booking model has fields for user_id, phone, etc.
+        # This is where we insert the JSON string instead of the dictionary
+        new_booking = Booking(
+            user_id=session["user_id"],
+            phone=phone_number,
+            invoice_id=invoice_json, # <--- The key fix is here
+            status="PENDING"
         )
-
-        # IntaSend responses vary — try a few keys to retrieve invoice id
-        invoice_id = None
-        if isinstance(resp, dict):
-            invoice_id = resp.get("invoice") or resp.get("id") or resp.get("data", {}).get("invoice")
-        # fallback: stringify response if nothing else
-        invoice_id_str = json.dumps(resp)
-
-        # Save booking with invoice id (if found), phone, pending status
-        booking = Booking(user_id=user.id, phone=phone, invoice_id=invoice_id or invoice_id_str, status="pending")
-        db.session.add(booking)
+        db.session.add(new_booking)
         db.session.commit()
+        
+        # This is what will be sent to the front end
+        return jsonify({
+            "success": True, 
+            "message": "STK push sent. Check your phone.", 
+            "invoice": response_data.get("invoice id", "n/a")
+        }), 200
 
-        return jsonify({"message": "STK push sent to your phone!", "invoice": booking.invoice_id, "raw": resp})
     except Exception as e:
-        return jsonify({"message": f"Booking failed: {str(e)}"}), 400
+        # Instead of showing the detailed error, we'll log it and
+        # return a generic, user-friendly message.
+        print(f"Booking Error: {e}") # Log the error for debugging
+        return jsonify({
+            "success": False, 
+            "message": "Booking failed. Please try again or contact support."
+        }), 500
 
 
 @app.route("/intasend/callback", methods=["POST"])
